@@ -17,6 +17,8 @@ func Layout(blocks []Block) []LayoutResult {
 	}
 
 	cand := make([]candidate, 0)
+
+	// put original blocks
 	for _, b := range blocks {
 		cand = append(cand, candidate{
 			id:        b.Id,
@@ -25,6 +27,7 @@ func Layout(blocks []Block) []LayoutResult {
 		})
 	}
 
+	// put rotated blocks
 	for _, b := range blocks {
 		cand = append(cand, candidate{
 			id:        b.Id,
@@ -56,20 +59,20 @@ type candidate struct {
 	isRotated bool
 }
 
-func dfs(remaining int, blocks []candidate, used map[int64]bool, path []candidate, merged [][]int64) *[]candidate {
+func dfs(remaining int, blocks []candidate, used map[int64]bool, path []candidate, top [][]int64) *[]candidate {
 	if remaining == 0 {
 		return &path
 	}
 
 	for _, block := range blocks {
 		if _, ok := used[block.id]; !ok {
-			m := merge(merged, block.form)
-			if m == nil {
+			nTop := merge(top, block.form)
+			if nTop == nil {
 				continue
 			}
 
 			used[block.id] = true
-			solved := dfs(remaining-1, blocks, used, append(path, block), *m)
+			solved := dfs(remaining-1, blocks, used, append(path, block), *nTop)
 			if solved != nil {
 				return solved
 			}
@@ -101,27 +104,23 @@ func merge(low [][]int64, high [][]int64) *[][]int64 {
 }
 
 func openBlock(form [][]int64, topToLow bool) [][]int64 {
-	open := make([][]int64, 0)
-
 	if topToLow {
-		for _, line := range form {
-			if !zeros(line) {
+		var end int
+		for end = 0; end < len(form); end++ {
+			if !zeros(form[end]) {
 				break
 			}
-
-			open = append(open, line)
 		}
+		return form[0:end]
 	} else {
-		for i := len(form) - 1; i >= 0; i-- {
-			if !zeros(form[i]) {
+		var start int
+		for start = len(form) - 1; start >= 0; start-- {
+			if !zeros(form[start]) {
 				break
 			}
-
-			open = append([][]int64{form[i]}, open...)
 		}
+		return form[start+1:]
 	}
-
-	return open
 }
 
 func zeros(line []int64) bool {
