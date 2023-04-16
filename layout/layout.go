@@ -11,6 +11,19 @@ type LayoutResult struct {
 	IsRotated bool
 }
 
+type candidate struct {
+	id        int64
+	form      [][]int64
+	isRotated bool
+}
+
+type Direction int
+
+const (
+	Top Direction = iota
+	Bottom
+)
+
 func Layout(blocks []Block) []LayoutResult {
 	if len(blocks) == 0 {
 		return make([]LayoutResult, 0)
@@ -53,12 +66,6 @@ func Layout(blocks []Block) []LayoutResult {
 	return res
 }
 
-type candidate struct {
-	id        int64
-	form      [][]int64
-	isRotated bool
-}
-
 func dfs(remaining int, blocks []candidate, used map[int64]bool, path []candidate, top [][]int64) *[]candidate {
 	if remaining == 0 {
 		return &path
@@ -84,27 +91,28 @@ func dfs(remaining int, blocks []candidate, used map[int64]bool, path []candidat
 }
 
 func merge(low [][]int64, high [][]int64) *[][]int64 {
-	zlow := openBlock(low, true)
-	zhigh := openBlock(high, false)
-	if len(zlow) != len(zhigh) {
+	lowTop := openBlock(low, Top)
+	highBottom := openBlock(high, Bottom)
+	if len(lowTop) != len(highBottom) {
 		return nil
 	}
 
-	for i := 0; i < len(zlow); i++ {
-		for j := 0; j < len(zlow[i]); j++ {
-			if zlow[i][j] == zhigh[i][j] {
+	for i := 0; i < len(lowTop); i++ {
+		for j := 0; j < len(lowTop[i]); j++ {
+			if lowTop[i][j] == highBottom[i][j] {
 				return nil
 			}
 		}
 	}
 
-	merged := high[0 : len(high)-len(zhigh)]
+	merged := high[0 : len(high)-len(highBottom)]
 
 	return &merged
 }
 
-func openBlock(form [][]int64, topToLow bool) [][]int64 {
-	if topToLow {
+func openBlock(form [][]int64, dir Direction) [][]int64 {
+	switch dir {
+	case Top:
 		var end int
 		for end = 0; end < len(form); end++ {
 			if !zeros(form[end]) {
@@ -112,7 +120,7 @@ func openBlock(form [][]int64, topToLow bool) [][]int64 {
 			}
 		}
 		return form[0:end]
-	} else {
+	case Bottom:
 		var start int
 		for start = len(form) - 1; start >= 0; start-- {
 			if !zeros(form[start]) {
@@ -120,6 +128,8 @@ func openBlock(form [][]int64, topToLow bool) [][]int64 {
 			}
 		}
 		return form[start+1:]
+	default:
+		panic("unknown position arg")
 	}
 }
 

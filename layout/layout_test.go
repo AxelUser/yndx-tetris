@@ -303,8 +303,8 @@ func Test_merge(t *testing.T) {
 
 func Test_openBlock(t *testing.T) {
 	type args struct {
-		form     [][]int64
-		topToLow bool
+		form [][]int64
+		dir  Direction
 	}
 	tests := []struct {
 		name string
@@ -312,25 +312,36 @@ func Test_openBlock(t *testing.T) {
 		want [][]int64
 	}{
 		{
-			name: "all closed",
+			name: "should return empty slice - top closed",
 			args: args{
 				form: [][]int64{
 					{1, 1, 1},
 					{1, 1, 1},
 				},
-				topToLow: false,
+				dir: Top,
 			},
 			want: [][]int64{},
 		},
 		{
-			name: "test low to top",
+			name: "should return empty slice - bottom closed",
+			args: args{
+				form: [][]int64{
+					{1, 1, 1},
+					{1, 1, 1},
+				},
+				dir: Bottom,
+			},
+			want: [][]int64{},
+		},
+		{
+			name: "should return open bottom part",
 			args: args{
 				form: [][]int64{
 					{1, 1, 1},
 					{1, 0, 1},
 					{1, 0, 1},
 				},
-				topToLow: false,
+				dir: Bottom,
 			},
 			want: [][]int64{
 				{1, 0, 1},
@@ -338,14 +349,14 @@ func Test_openBlock(t *testing.T) {
 			},
 		},
 		{
-			name: "test top to low",
+			name: "should return open top part",
 			args: args{
 				form: [][]int64{
 					{1, 0, 1},
 					{1, 0, 1},
 					{1, 1, 1},
 				},
-				topToLow: true,
+				dir: Top,
 			},
 			want: [][]int64{
 				{1, 0, 1},
@@ -355,7 +366,7 @@ func Test_openBlock(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := openBlock(tt.args.form, tt.args.topToLow); !reflect.DeepEqual(got, tt.want) {
+			if got := openBlock(tt.args.form, tt.args.dir); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("openBlock() = %v, want %v", got, tt.want)
 			}
 		})
