@@ -13,7 +13,8 @@ type LayoutResult struct {
 
 type candidate struct {
 	id        int64
-	form      [][]int64
+	top       [][]int64
+	bottom    [][]int64
 	isRotated bool
 }
 
@@ -35,51 +36,47 @@ func Layout(blocks []Block) []LayoutResult {
 	for _, b := range blocks {
 		cand = append(cand, candidate{
 			id:        b.Id,
-			form:      b.Form,
+			top:       openBlock(b.Form, Top),
+			bottom:    openBlock(b.Form, Bottom),
 			isRotated: false,
 		})
 	}
 
 	// put rotated blocks
-	for _, b := range blocks {
+	for i := 0; i < len(blocks); i++ {
 		cand = append(cand, candidate{
-			id:        b.Id,
-			form:      rotate(b.Form),
+			id:        cand[i].id,
+			top:       rotate(cand[i].bottom),
+			bottom:    rotate(cand[i].top),
 			isRotated: true,
 		})
 	}
 
-	path := dfs(len(blocks), cand, make(map[int64]bool), make([]candidate, 0), make([][]int64, 0))
+	path := dfs(len(blocks), cand, make(map[int64]bool), make([]LayoutResult, 0), make([][]int64, 0))
 	if path == nil {
 		panic("unexpected empty result")
 	}
 
-	res := make([]LayoutResult, 0)
-	for i, c := range *path {
-		res = append(res, LayoutResult{
-			BlockId:   c.id,
-			Position:  i + 1,
-			IsRotated: c.isRotated,
-		})
-	}
-
-	return res
+	return *path
 }
 
-func dfs(remaining int, blocks []candidate, used map[int64]bool, path []candidate, top [][]int64) *[]candidate {
+func dfs(remaining int, blocks []candidate, used map[int64]bool, path []LayoutResult, top [][]int64) *[]LayoutResult {
 	if remaining == 0 {
 		return &path
 	}
 
 	for _, block := range blocks {
 		if _, ok := used[block.id]; !ok {
-			nTop := merge(top, block.form)
-			if nTop == nil {
+			if !fit(top, block.bottom) {
 				continue
 			}
 
 			used[block.id] = true
-			solved := dfs(remaining-1, blocks, used, append(path, block), *nTop)
+			solved := dfs(remaining-1, blocks, used, append(path, LayoutResult{
+				BlockId:   block.id,
+				Position:  len(path) + 1,
+				IsRotated: block.isRotated,
+			}), block.top)
 			if solved != nil {
 				return solved
 			}
@@ -90,24 +87,20 @@ func dfs(remaining int, blocks []candidate, used map[int64]bool, path []candidat
 	return nil
 }
 
-func merge(low [][]int64, high [][]int64) *[][]int64 {
-	lowTop := openBlock(low, Top)
-	highBottom := openBlock(high, Bottom)
-	if len(lowTop) != len(highBottom) {
-		return nil
+func fit(low [][]int64, high [][]int64) bool {
+	if len(low) != len(high) {
+		return false
 	}
 
-	for i := 0; i < len(lowTop); i++ {
-		for j := 0; j < len(lowTop[i]); j++ {
-			if lowTop[i][j] == highBottom[i][j] {
-				return nil
+	for i := 0; i < len(low); i++ {
+		for j := 0; j < len(low[i]); j++ {
+			if low[i][j] == high[i][j] {
+				return false
 			}
 		}
 	}
 
-	merged := high[0 : len(high)-len(highBottom)]
-
-	return &merged
+	return true
 }
 
 func openBlock(form [][]int64, dir Direction) [][]int64 {
@@ -145,6 +138,10 @@ func zeros(line []int64) bool {
 
 func rotate(form [][]int64) [][]int64 {
 	l := len(form)
+	if l == 0 {
+		return make([][]int64, 0)
+	}
+
 	w := len(form[0])
 	r := make([][]int64, l)
 	for i := range form {

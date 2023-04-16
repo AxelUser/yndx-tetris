@@ -213,7 +213,7 @@ func TestLayout(t *testing.T) {
 	}
 }
 
-func Test_merge(t *testing.T) {
+func Test_fit(t *testing.T) {
 	type args struct {
 		low  [][]int64
 		high [][]int64
@@ -221,80 +221,59 @@ func Test_merge(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want *[][]int64
+		want bool
 	}{
 		{
 			name: "should fit",
 			args: args{
 				high: [][]int64{
-					{1, 0, 1},
-					{1, 1, 1},
 					{0, 1, 1},
 				},
 				low: [][]int64{
 					{1, 0, 0},
-					{1, 1, 1},
-					{1, 1, 1},
 				},
 			},
-			want: &[][]int64{
-				{1, 0, 1},
-				{1, 1, 1},
-			},
+			want: true,
 		},
 		{
 			name: "should fit to fully closed part",
 			args: args{
-				high: [][]int64{
-					{1, 0, 1},
-					{1, 1, 1},
-				},
-				low: [][]int64{
-					{1, 1, 1},
-					{1, 1, 1},
-				},
+				high: [][]int64{},
+				low:  [][]int64{},
 			},
-			want: &[][]int64{
-				{1, 0, 1},
-				{1, 1, 1},
-			},
+			want: true,
 		},
 		{
 			name: "should not fit",
 			args: args{
 				high: [][]int64{
-					{1, 1, 1},
 					{0, 1, 1},
 					{0, 1, 0},
 				},
 				low: [][]int64{
 					{1, 0, 1},
 					{1, 0, 1},
-					{1, 1, 1},
 				},
 			},
-			want: nil,
+			want: false,
 		},
 		{
-			name: "should not fit and have different height of open part",
+			name: "should not fit - have different height of open part",
 			args: args{
 				high: [][]int64{
-					{1, 1, 1},
-					{1, 1, 1},
 					{0, 1, 0},
 				},
 				low: [][]int64{
 					{1, 0, 0},
 					{1, 0, 1},
-					{1, 1, 1},
 				},
 			},
-			want: nil,
+			want: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := merge(tt.args.low, tt.args.high); !reflect.DeepEqual(got, tt.want) {
+			if got := fit(tt.args.low, tt.args.high); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("merge() = %v, want %v", got, tt.want)
 			}
 		})
